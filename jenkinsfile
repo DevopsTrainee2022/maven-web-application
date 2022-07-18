@@ -1,0 +1,29 @@
+node{
+    def mavenHome = tool name: "maven3.8.6"
+    properties([buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '5', daysToKeepStr: '', numToKeepStr: '5')), pipelineTriggers([githubPush()])])
+    stage('checkoucode')
+    {
+        git branch: 'development', credentialsId: '3e050c8b-03f4-4d2d-a15a-fb2e43521cec', url: 'https://github.com/DevopsTrainee2022/maven-web-application.git'
+    }
+    stage('build')
+{
+
+    sh "${mavenHome}/bin/mvn clean package"
+}
+    stage("sonarqubereport")
+    {
+        sh "${mavenHome}/bin/mvn sonar:sonar"
+    }
+    stage('Nexusrepository')
+    {
+       sh "${mavenHome}/bin/mvn deploy"
+    }
+    stage('deploy')
+    {
+        sshagent(['c2108041-9fbd-419a-af73-6aa85893a792']) {
+    sh "scp -o StrictHostKeyChecking=no target/maven-web-application.war  ec2-user@172.31.13.168:/opt/apache-tomcat-9.0.64/webapps"
+}
+        
+    }
+
+}
